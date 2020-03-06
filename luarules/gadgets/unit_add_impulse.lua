@@ -10,8 +10,24 @@ function gadget:GetInfo()
 		enabled = true
 	}
 end
+local Weapons = {}
+for i = 1, #UnitDefs do
+	local unitDefID = UnitDefs[i]
+
+	if not unitDefID.canFly and #unitDefID.weapons and #unitDefID.weapons >= 1  then
+			for v = 1, #unitDefID.weapons do
+				weaponDef = weaponDefTable[unitDefID.weapons[v].weaponDef]
+				if weaponDef.type == "Cannon" and weaponDef.range < 1200 then 
+					Weapons[weaponDef] = {impulseBoost = 1, weaponNumber = v}
+				end
+			end
+	end
+end
 
 if (gadgetHandler:IsSyncedCode()) then
+	--------------------------------------------------------------------------------
+	-- BEGIN SYNCED
+	--------------------------------------------------------------------------------
 	local multiplier = tonumber(Spring.GetModOptions().mo_impmulti) or 0
 	local factor = 0.7
 
@@ -84,12 +100,11 @@ if (gadgetHandler:IsSyncedCode()) then
 	local GetUnitWeaponVectors = Spring.GetUnitWeaponVectors
 	local AreTeamsAllied = Spring.AreTeamsAllied
 
-	--------------------------------------------------------------------------------
-	-- BEGIN SYNCED
-	--------------------------------------------------------------------------------
 	function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID, attackerDefID, attackerTeam)
-		if multiplier > 0 and attackerID and (unitTeam ~= attackerTeam) and not AreTeamsAllied(unitTeam,attackerTeam) and Weapons[weaponDefID] then -- Short-circuit evaluation; that is, the other operands are evaluated only if necessary.
+		-- Short-circuit evaluation; that is, the other operands are evaluated only if necessary.
+		if multiplier > 0 and attackerID and (unitTeam ~= attackerTeam) and not AreTeamsAllied(unitTeam, attackerTeam) and Weapons[weaponDefID] then
 			local number, _, _ = GetUnitWeaponTarget(attackerID, Weapons[weaponDefID].weaponNumber)
+
 			if number > 0 then
 				local impulseBoost = Weapons[weaponDefID].impulseBoost / (GetUnitMass(unitID) ^ factor)
 				local _, _, _, dirX, _, dirZ = GetUnitWeaponVectors(attackerID, Weapons[weaponDefID].weaponNumber)
